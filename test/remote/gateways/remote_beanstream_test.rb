@@ -435,7 +435,7 @@ class RemoteBeanstreamTest < Test::Unit::TestCase
   private
 
   def generate_single_use_token(credit_card)
-    uri = URI.parse('https://www.beanstream.com/scripts/tokenization/tokens')
+    uri = URI.parse('https://api.bam.shift4api.net/scripts/tokenization/tokens')
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE

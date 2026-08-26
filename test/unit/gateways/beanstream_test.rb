@@ -315,6 +315,32 @@ class BeanstreamTest < Test::Unit::TestCase
     assert_success response
   end
 
+  def test_transaction_endpoint
+    stub_comms(@gateway, :ssl_request) do
+      @gateway.purchase(@amount, @credit_card, @options)
+    end.check_request do |_method, endpoint, _data, _headers|
+      assert_equal 'https://api.bam.shift4api.net/scripts/process_transaction.asp', endpoint
+    end.respond_with(successful_purchase_response)
+  end
+
+  def test_secure_profile_endpoint
+    stub_comms(@gateway, :ssl_request) do
+      @gateway.store(@credit_card, @options)
+    end.check_request do |_method, endpoint, _data, _headers|
+      assert_equal 'https://api.bam.shift4api.net/scripts/payment_profile.asp', endpoint
+    end.respond_with(successful_purchase_response)
+  end
+
+  def test_recurring_endpoint
+    stub_comms(@gateway, :ssl_request) do
+      assert_deprecation_warning(Gateway::RECURRING_DEPRECATION_MESSAGE) do
+        @gateway.cancel_recurring(account_id: '1234')
+      end
+    end.check_request do |_method, endpoint, _data, _headers|
+      assert_equal 'https://api.bam.shift4api.net/scripts/recurring_billing.asp', endpoint
+    end.respond_with(successful_cancel_recurring_response)
+  end
+
   def test_transcript_scrubbing
     assert_equal scrubbed_transcript, @gateway.scrub(transcript)
   end

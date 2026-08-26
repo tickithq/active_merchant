@@ -3,8 +3,8 @@ module ActiveMerchant # :nodoc:
     module BeanstreamCore
       include Empty
 
-      RECURRING_URL = 'https://www.beanstream.com/scripts/recurring_billing.asp'
-      SECURE_PROFILE_URL = 'https://www.beanstream.com/scripts/payment_profile.asp'
+      RECURRING_URL = 'https://api.bam.shift4api.net/scripts/recurring_billing.asp'
+      SECURE_PROFILE_URL = 'https://api.bam.shift4api.net/scripts/payment_profile.asp'
 
       SP_SERVICE_VERSION = '1.1'
 
@@ -138,7 +138,7 @@ module ActiveMerchant # :nodoc:
 
         # The homepage URL of the gateway
         base.homepage_url = 'http://www.beanstream.com/'
-        base.live_url = 'https://api.na.bambora.com/scripts/process_transaction.asp'
+        base.live_url = 'https://api.bam.shift4api.net/scripts/process_transaction.asp'
 
         # The name of the gateway
         base.display_name = 'Beanstream.com'
