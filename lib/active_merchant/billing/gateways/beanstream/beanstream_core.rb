@@ -221,8 +221,8 @@ module ActiveMerchant # :nodoc:
       end
 
       def add_address(post, options)
-        post[:ordEmailAddress]  = options[:email] if options[:email]
-        post[:shipEmailAddress] = options[:shipping_email] || options[:email] if options[:email]
+        post[:ordEmailAddress]  = options[:email]
+        post[:shipEmailAddress] = options[:shipping_email] || options[:email]
 
         prepare_address_for_non_american_countries(options)
 
@@ -312,13 +312,15 @@ module ActiveMerchant # :nodoc:
       def add_secure_profile_variables(post, options = {})
         post[:serviceVersion] = SP_SERVICE_VERSION
         post[:responseFormat] = 'QS'
-        post[:cardValidation] = (options[:cardValidation].to_i == 1) || '0'
+        post[:cardValidation] = options[:cardValidation].to_i == 1 ? '1' : '0'
         post[:operationType] = options[:operationType] || options[:operation] || secure_profile_action(:new)
         post[:customerCode] = options[:billing_id] || options[:vault_id] || false
         post[:status] = options[:status]
 
+        # Only fall back to the billing name for single-use tokens; a credit card
+        # carries the card owner name itself and must not be overwritten with it.
         billing_address = options[:billing_address] || options[:address]
-        post[:trnCardOwner] = billing_address ? billing_address[:name] : nil
+        post[:trnCardOwner] = billing_address[:name] if post[:trnCardOwner].blank? && billing_address
       end
 
       def add_recurring_amount(post, money)
@@ -337,7 +339,7 @@ module ActiveMerchant # :nodoc:
       def add_recurring_service(post, options)
         post[:serviceVersion] = '1.0'
         post[:merchantId]     = @options[:login]
-        post[:passCode]       = @options[:recurring_api_key]
+        post[:passcode]       = @options[:recurring_api_key]
         post[:rbAccountId]    = options[:account_id]
       end
 
@@ -407,7 +409,11 @@ module ActiveMerchant # :nodoc:
       end
 
       def recurring_commit(params)
-        recurring_post(post_data(params, false))
+        # The recurring endpoint authenticates with the merchantId/passcode pair added
+        # by add_recurring_service. Sending the transaction API's merchant_id/passcode
+        # as well collides with them, since it matches field names case insensitively.
+        params[:requestType] = 'BACKEND'
+        recurring_post(encode_post_data(params))
       end
 
       def post(data, use_profile_api = nil)
@@ -471,6 +477,10 @@ module ActiveMerchant # :nodoc:
         params[:vbvEnabled] = '0'
         params[:scEnabled] = '0'
 
+        encode_post_data(params)
+      end
+
+      def encode_post_data(params)
         params.reject { |_k, v| v.blank? }.collect { |key, value| "#{key}=#{CGI.escape(value.to_s)}" }.join('&')
       end
     end

@@ -302,6 +302,19 @@ class BeanstreamTest < Test::Unit::TestCase
     assert_success response
   end
 
+  def test_sends_shipping_email_without_order_email
+    @options.delete(:email)
+    @options[:shipping_email] = 'ship@mail.com'
+
+    response = stub_comms(@gateway, :ssl_request) do
+      @gateway.purchase(@amount, @decrypted_credit_card, @options)
+    end.check_request do |_method, _endpoint, data, _headers|
+      assert_match(/shipEmailAddress=ship%40mail.com/, data)
+    end.respond_with(successful_purchase_response)
+
+    assert_success response
+  end
+
   def test_sends_alternate_phone_number_value
     @options[:billing_address][:phone] = nil
     @options[:billing_address][:phone_number] = '9191234567'
@@ -313,6 +326,45 @@ class BeanstreamTest < Test::Unit::TestCase
     end.respond_with(successful_purchase_response)
 
     assert_success response
+  end
+
+  def test_store_sends_card_owner_from_the_credit_card
+    stub_comms(@gateway, :ssl_request) do
+      @gateway.store(@credit_card, @options)
+    end.check_request do |_method, _endpoint, data, _headers|
+      assert_match(/trnCardOwner=Longbob\+Longsen/, data)
+      assert_match(/ordName=xiaobo\+zzz/, data)
+    end.respond_with(successful_purchase_response)
+  end
+
+  def test_store_sends_card_owner_from_the_billing_address_for_a_single_use_token
+    stub_comms(@gateway, :ssl_request) do
+      @gateway.store('gt6-0c78c25b-3637-4ba0-90e2-26105287f198', @options)
+    end.check_request do |_method, _endpoint, data, _headers|
+      assert_match(/trnCardOwner=xiaobo\+zzz/, data)
+    end.respond_with(successful_purchase_response)
+  end
+
+  def test_store_sends_card_validation_as_a_digit
+    stub_comms(@gateway, :ssl_request) do
+      @gateway.store(@credit_card, @options.merge(cardValidation: 1))
+    end.check_request do |_method, _endpoint, data, _headers|
+      assert_match(/cardValidation=1&/, data)
+    end.respond_with(successful_purchase_response)
+  end
+
+  def test_recurring_sends_only_the_recurring_credentials
+    gateway = BeanstreamGateway.new(login: 'merchant id', api_key: 'api_key', recurring_api_key: 'recurring_api_key')
+
+    stub_comms(gateway, :ssl_request) do
+      assert_deprecation_warning(Gateway::RECURRING_DEPRECATION_MESSAGE) do
+        gateway.cancel_recurring(account_id: '1234')
+      end
+    end.check_request do |_method, _endpoint, data, _headers|
+      assert_match(/merchantId=merchant\+id/, data)
+      assert_match(/passcode=recurring_api_key/, data)
+      assert_no_match(/merchant_id=/, data)
+    end.respond_with(successful_cancel_recurring_response)
   end
 
   def test_transaction_endpoint
