@@ -86,4 +86,20 @@ class VersionableTest < Test::Unit::TestCase
     assert_equal '3.0', @dummy_child_instance.fetch_version, 'Instance should return the correct version'
     assert_equal 'v5', @dummy_child_instance.fetch_version(:some_feature), 'Instance should return the correct version'
   end
+
+  def test_subclass_inherits_parent_version
+    ParentClass.version('9.0', :inherited_feature)
+    assert_equal '9.0', DummyClass.fetch_version(:inherited_feature), 'Subclass should fall back to the parent version'
+    assert_equal '9.0', DummyChildClass.fetch_version(:inherited_feature), 'Grandchild should fall back to the parent version'
+    assert_equal '9.0', @dummy_child_instance.fetch_version(:inherited_feature), 'Instance should fall back to the parent version'
+  end
+
+  def test_subclass_version_overrides_parent_without_changing_it
+    ParentClass.version('9.0', :overridden_feature)
+    DummyClass.version('10.0', :overridden_feature)
+    assert_equal '10.0', DummyClass.fetch_version(:overridden_feature), 'Subclass should use its own version'
+    assert_equal '10.0', DummyChildClass.fetch_version(:overridden_feature), 'Grandchild should use its nearest ancestor version'
+    assert_equal '9.0', ParentClass.fetch_version(:overridden_feature), 'Parent should keep its own version'
+    assert_equal '9.0', FakeClass.fetch_version(:overridden_feature), 'Sibling should keep the parent version'
+  end
 end
