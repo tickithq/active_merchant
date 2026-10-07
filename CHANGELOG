@@ -206,6 +206,7 @@
 * Pin Payments: Add transaction_search method and support paginated API responses [hudakh] #5541
 * Beanstream: Move API endpoints to the Shift4 domain [alexdunae]
 * Beanstream: Fix profile, shipping email and recurring billing request fields [alexdunae]
+* Versionable: Fall back to the superclass version so PaypalCa, PaypalDigitalGoods, InContextPaypalExpress and Webpay keep their API version [alexdunae]
 
 == Version 1.137.0 (August 2, 2024)
 * Unlock dependency on `rexml` to allow fixing a CVE (#5181).

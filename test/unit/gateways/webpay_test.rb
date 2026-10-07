@@ -16,6 +16,10 @@ class WebpayTest < Test::Unit::TestCase
     }
   end
 
+  def test_uses_the_stripe_api_version
+    assert_equal '2020-08-27', @gateway.send(:api_version, {})
+  end
+
   def test_successful_authorization
     @gateway.expects(:ssl_request).returns(successful_authorization_response)
 

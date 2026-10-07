@@ -17,13 +17,15 @@ module ActiveMerchant
         versions[feature] = version
       end
 
+      # Each class keeps its own versions hash, so fall back to the superclass for a
+      # feature the subclass does not set itself.
       def fetch_version(feature = :default_api)
-        versions[feature]
+        versions.fetch(feature) { superclass.fetch_version(feature) if superclass.respond_to?(:fetch_version) }
       end
     end
 
     def fetch_version(feature = :default_api)
-      versions[feature]
+      versions.fetch(feature) { self.class.fetch_version(feature) }
     end
   end
 end
